@@ -1,6 +1,7 @@
-import {sql} from "@vercel/postgres";
+import prisma from "@/app/prisma/client";
 import {AuthOptions} from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcrypt";
 
 
 export const authOptions: AuthOptions = {
@@ -44,10 +45,18 @@ export const authOptions: AuthOptions = {
                     return null
                 }
                 try {
-                    const user = await sql`SELECT * FROM "user" WHERE email=${credentials.email} and password=${credentials.password}`
-                    if (user.rows.length === 1) {
-                        console.log({'authOptions.providers.CredentialsProvider.authorize.user': user.rows[0]})
-                        return user.rows[0]
+                    const user = await prisma.user.findUnique({
+                        where: {
+                            email: credentials.email
+                        }
+                    })
+                    if (user) {
+                        const passwordsMatch = await bcrypt.compare(credentials.password, user.password)
+                        if (passwordsMatch) {
+                            return user
+                        } else {
+                            return null
+                        }
                     }
                     return null
                 } catch (e) {

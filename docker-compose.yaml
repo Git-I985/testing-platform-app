@@ -1,0 +1,24 @@
+name: testing-platform
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      # name of a database to be created on image startup     
+      MYSQL_DATABASE: 'db'
+      # Used in conjunction to create a new user and to set that user's password. This user will be granted superuser permissions (see above) for the database specified by the MYSQL_DATABASE variable.
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      # Mandatory, specifies the password that will be set for the MySQL root superuser account
+      MYSQL_ROOT_PASSWORD: 'password'
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - 3306:3306
+  adminer:
+      image: adminer
+      restart: always
+      ports:
+        - 8080:8080
+volumes:
+  dbdata:

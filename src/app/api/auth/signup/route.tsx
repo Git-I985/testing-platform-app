@@ -1,4 +1,5 @@
-import {sql} from "@vercel/postgres";
+import prisma from "@/app/prisma/client";
+import bcrypt from "bcrypt";
 import {NextResponse} from "next/server";
 
 export async function POST(request: Request) {
@@ -11,8 +12,12 @@ export async function POST(request: Request) {
     }
 
     try {
-        const user = await sql`SELECT * FROM "user" WHERE email=${requestBody.email}`
-        if (user.rows.length) {
+        const user = await prisma.user.findUnique({
+            where: {
+                email: requestBody.email
+            }
+        })
+        if (user) {
             return NextResponse.json({
                 error: 'Пользователь с таким email уже существует'
             }, {status: 400})
@@ -25,7 +30,10 @@ export async function POST(request: Request) {
     }
 
     try {
-        await sql`INSERT INTO "user" ("email", "password") VALUES (${requestBody.email}, ${requestBody.password})`
+        const hashedPassword = await bcrypt.hash(requestBody.password, 10)
+        await prisma.user.create({
+            data: {email: requestBody.email, password: hashedPassword},
+        })
     } catch (e) {
         console.log(`User creation error`, e)
         return NextResponse.json({
