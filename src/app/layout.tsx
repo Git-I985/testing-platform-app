@@ -1,4 +1,5 @@
 import {authOptions} from "@/app/api/auth/[...nextauth]/authOptions";
+import PersistentDrawerLeft from "@/app/InnerLayout";
 import {WithSession} from "@/app/WithSession";
 import theme from "@/theme";
 import {CssBaseline} from "@mui/material";
@@ -25,7 +26,9 @@ export default async function RootLayout({children}: PropsWithChildren) {
         <WithSession session={session}>
             <AppRouterCacheProvider>
                 <CssBaseline/>
-                <ThemeProvider theme={theme}>{children}</ThemeProvider>
+                <ThemeProvider theme={theme}>
+                    {session ? <PersistentDrawerLeft>{children}</PersistentDrawerLeft> : children}
+                </ThemeProvider>
             </AppRouterCacheProvider>
         </WithSession>
         </body>
