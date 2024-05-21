@@ -1,6 +1,7 @@
 "use client";
 import { useHandleAutoFill } from "@/app/components/Forms/useHandleAutoFill";
 import { validateEmail } from "@/app/components/Forms/validateEmail";
+import { useUser } from "@/app/WithUser";
 import { yupResolver } from "@hookform/resolvers/yup";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { Alert, CircularProgress, Snackbar } from "@mui/material";
@@ -10,6 +11,7 @@ import { User } from "@prisma/client";
 import { useEffect, useState } from "react";
 import * as React from "react";
 import { Control, Controller, SubmitHandler, useForm } from "react-hook-form";
+import { useSWRConfig } from "swr";
 import * as Yup from "yup";
 
 interface Form {
@@ -120,7 +122,9 @@ function NewPasswordField({ control }: { control: Control<Form> }) {
   );
 }
 
-export function EditProfileForm({ user }: { user: User }) {
+export function EditProfileForm() {
+  const { mutate } = useSWRConfig();
+  const { user } = useUser();
   const validationSchema = Yup.object().shape(
     {
       email: Yup.string()
@@ -188,6 +192,7 @@ export function EditProfileForm({ user }: { user: User }) {
       .then((res) => {
         if (res.status === 200 && res.ok) {
           setSnackbarOpen(true);
+          mutate("/api/user");
         } else {
           res.json().then((res) => {
             if (res.error) {

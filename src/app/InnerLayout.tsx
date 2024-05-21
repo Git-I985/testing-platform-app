@@ -1,4 +1,6 @@
 "use client";
+
+import { useUser } from "@/app/WithUser";
 import { Logout } from "@mui/icons-material";
 import { useMediaQuery } from "@mui/system";
 import { signOut } from "next-auth/react";
@@ -16,18 +18,15 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import InboxIcon from "@mui/icons-material/MoveToInbox";
-import MailIcon from "@mui/icons-material/Mail";
 
 const drawerWidth = 240;
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
+  // @ts-ignore
   ({ theme, open }) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
@@ -35,6 +34,7 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    maxWidth: open ? `calc(100% - ${drawerWidth}px)` : "100%",
     marginLeft: `-${drawerWidth}px`,
     ...(open && {
       transition: theme.transitions.create("margin", {
@@ -48,6 +48,7 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })(
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
+  // @ts-ignore
 })(({ theme, open }) => ({
   transition: theme.transitions.create(["margin", "width"], {
     easing: theme.transitions.easing.sharp,
@@ -77,6 +78,8 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
   const matches = useMediaQuery(theme.breakpoints.up("md"));
   const [open, setOpen] = React.useState(true);
 
+  const { user } = useUser();
+
   const handleDrawerOpen = () => {
     setOpen(true);
   };
@@ -98,9 +101,21 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       >
         <Toolbar>
-          <Typography variant="h6" noWrap fontWeight={600} sx={{ flexGrow: 1 }}>
-            АСТ
-          </Typography>
+          <Box sx={{ flexGrow: 1, display: "flex", gap: 1 }}>
+            <Typography variant="h6" noWrap fontWeight={600}>
+              АСТ
+            </Typography>
+            {user.organisation ? (
+              <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
+                {user.organisation.name}
+              </Typography>
+            ) : null}
+          </Box>
+          {user.name ? (
+            <Typography variant="body1" noWrap>
+              {user.name}
+            </Typography>
+          ) : null}
           {matches ? null : (
             <IconButton
               onClick={() => setOpen(!open)}
@@ -110,7 +125,6 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
               <MenuIcon fontSize={"large"} />
             </IconButton>
           )}
-
           {matches ? (
             <IconButton
               onClick={() => signOut()}
@@ -142,22 +156,37 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
         {/*</DrawerHeader>*/}
         <Divider />
         <List sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-          {/*{['Тесты', 'Профиль'].map((text, index) => (*/}
           <ListItem disablePadding>
             <ListItemButton component={Link} href={"/"}>
               <ListItemText primary={"Главная"} />
             </ListItemButton>
           </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton component={Link} href={"/tests"}>
-              <ListItemText primary={"Тесты"} />
-            </ListItemButton>
-          </ListItem>
+          {user?.organisationId ? (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton component={Link} href={"/tests"}>
+                  <ListItemText primary={"Тесты"} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton component={Link} href={"/organisation"}>
+                  <ListItemText primary={"Организация"} />
+                </ListItemButton>
+              </ListItem>
+            </>
+          ) : null}
           <ListItem disablePadding>
             <ListItemButton component={Link} href={"/profile"}>
               <ListItemText primary={"Профиль"} />
             </ListItemButton>
           </ListItem>
+          {!user?.organisationId ? (
+            <ListItem disablePadding>
+              <ListItemButton component={Link} href={"/organisation/create"}>
+                <ListItemText primary={"Создать организацию"} />
+              </ListItemButton>
+            </ListItem>
+          ) : null}
           {matches ? null : (
             <ListItem sx={{ mt: "auto" }}>
               <ListItemButton onClick={() => signOut()}>

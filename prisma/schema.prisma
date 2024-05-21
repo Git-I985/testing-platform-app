@@ -13,9 +13,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] 
+}
+
 model User {
-  id      Int      @id @default(autoincrement())
-  email   String   @unique
-  password    String
-  name    String?
+  id              Int                 @id @default(autoincrement())
+  email           String              @unique
+  password        String
+  name            String?
+  role            Role?                @relation(fields: [roleId], references: [id])
+  roleId          Int?
+  groups          OrganisationGroup[]
+  createdTests    Test[]              @relation("CreatedTests")
+  testCompletions TestCompletion[]    @relation("TestCompletions")
+  organisation   Organisation? @relation(fields: [organisationId], references: [id])
+  organisationId   Int?
+}
+
+model Organisation {
+  id   Int    @id @default(autoincrement())
+  name String
+  users User[]
+}
+
+model OrganisationGroup {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
+}
+
+model Test {
+  id        Int  @id @default(autoincrement())
+  creator   User @relation("CreatedTests", fields: [creatorId], references: [id])
+  creatorId Int
+  content   Json
+}
+
+model TestCompletion {
+  id     Int  @id @default(autoincrement())
+  user   User @relation("TestCompletions", fields: [userId], references: [id])
+  userId Int
 }
