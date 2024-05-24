@@ -73,7 +73,7 @@ function PasswordField({ control }: { control: Control<Form> }) {
 }
 
 const errorsMap: Record<string, string> = {
-  CredentialsSignin: "Пользователь не существует",
+  CredentialsSignin: "Неверные данные",
   default: "Произошла ошибка, пожалуйста обратитесь в техподдержку",
 };
 

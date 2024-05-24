@@ -1,9 +1,14 @@
 "use client";
-import { Organisation, User } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { createContext, ReactNode, useContext } from "react";
 import useSWR from "swr";
 
-const UserContext = createContext<User | null>(null);
+const UserContext = createContext<
+  | (Prisma.UserGetPayload<{
+      include: { role: true };
+    }> & { isAdmin: boolean })
+  | null
+>(null);
 
 const fetcher = (...args: Parameters<typeof fetch>) =>
   fetch(...args).then((res) => res.json());
@@ -15,10 +20,16 @@ export function WithUser({
   children: ReactNode;
   initialData: User;
 }) {
-  const { data } = useSWR("/api/user", fetcher, { fallbackData: initialData });
+  const { data } = useSWR("/api/user", fetcher, {
+    fallbackData: initialData,
+    revalidateIfStale: true,
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    revalidateOnReconnect: true,
+  });
   return (
     <UserContext.Provider
-      value={{ ...data, isAdmin: data.role.name === Role.ADMIN }}
+      value={{ ...data, isAdmin: data.role?.name === Role.ADMIN }}
     >
       {children}
     </UserContext.Provider>
@@ -30,14 +41,31 @@ export function useUser() {
 }
 
 export function useOrganisation(): {
-  organisation: Organisation;
+  organisation: Prisma.OrganisationGetPayload<{
+    include: { users: true };
+  }>;
   isLoading: boolean;
   error: boolean;
 } {
-  const { data, isLoading, error } = useSWR("/api/organisation", fetcher);
+  const { data, isLoading, error } = useSWR("/api/organisation", fetcher, {
+    revalidateIfStale: true,
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    revalidateOnReconnect: true,
+  });
   return { organisation: data, isLoading, error };
 }
 
 export enum Role {
   ADMIN = "ADMIN",
+  MANAGER = "MANAGER",
+  USER = "USER",
+}
+
+export function getUserRoleName(role: Role) {
+  return {
+    ADMIN: "Администратор",
+    MANAGER: "Менеджер",
+    USER: "Пользователь",
+  }[role];
 }

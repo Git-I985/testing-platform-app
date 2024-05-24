@@ -1,7 +1,17 @@
 "use client";
-import { useOrganisation, useUser } from "@/app/WithUser";
+import { useHandleAutoFill } from "@/app/components/Forms/useHandleAutoFill";
+import { validateEmail } from "@/app/components/Forms/validateEmail";
+import {
+  getUserRoleName,
+  Role,
+  useOrganisation,
+  useUser,
+} from "@/app/WithUser";
+import { yupResolver } from "@hookform/resolvers/yup";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import {
   DataGrid,
@@ -14,51 +24,24 @@ import {
   GridRowModes,
   GridRowModesModel,
   GridRowsProp,
-  GridSlots,
-  GridToolbarContainer,
   useGridApiRef,
 } from "@mui/x-data-grid";
+import { User } from "@prisma/client";
 import { useEffect } from "react";
 import * as React from "react";
-import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
-import { randomId } from "@mui/x-data-grid-generator";
+import { Control, Controller, useForm } from "react-hook-form";
+import { useSWRConfig } from "swr";
+import * as Yup from "yup";
 
 interface EditToolbarProps {
   setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
   setRowModesModel: (
     newModel: (oldModel: GridRowModesModel) => GridRowModesModel,
   ) => void;
-}
-
-function EditToolbar(props: EditToolbarProps) {
-  const { setRows, setRowModesModel } = props;
-
-  const handleClick = () => {
-    const id = randomId();
-    setRows((oldRows) => [...oldRows, { id, name: "", age: "", isNew: true }]);
-    setRowModesModel((oldModel) => ({
-      ...oldModel,
-      [id]: { mode: GridRowModes.Edit, fieldToFocus: "name" },
-    }));
-  };
-
-  return (
-    <GridToolbarContainer sx={{ p: 2 }}>
-      <Button
-        color="primary"
-        variant={"contained"}
-        startIcon={<AddIcon />}
-        onClick={handleClick}
-        sx={{ ml: "auto" }}
-      >
-        Добавить
-      </Button>
-    </GridToolbarContainer>
-  );
 }
 
 function useEditableDatagrid() {
@@ -85,32 +68,17 @@ function useEditableDatagrid() {
     }
   };
 
-  const handleCancelClick = (id: GridRowId, setRows, rows) => {
+  const handleCancelClick = (id: GridRowId) => {
     setRowModesModel({
       ...rowModesModel,
       [id]: { mode: GridRowModes.View, ignoreModifications: true },
     });
-    console.log("handleCancelClick");
-    console.log(rows);
-    const editedRow = rows.find((row) => row.id === id);
-    if (editedRow!.isNew) {
-      setRows(rows.filter((row) => row.id !== id));
-    }
-  };
-
-  const handleDeleteClick = (id: GridRowId, setRows, rows) => {
-    // api call
-    console.log("handleDeleteClick");
-    console.log(rows);
-    setRows(rows.filter((row) => row.id !== id));
-  };
-
-  const processRowUpdate = (newRow: GridRowModel, setRows, rows) => {
-    const updatedRow = { ...newRow, isNew: false };
-    // api call
-    console.log("processRowUpdate");
-    setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
-    return updatedRow;
+    // console.log("handleCancelClick");
+    // console.log(rows);
+    // const editedRow = rows.find((row) => row.id === id);
+    // if (editedRow!.isNew) {
+    //   setRows(rows.filter((row) => row.id !== id));
+    // }
   };
 
   return {
@@ -121,14 +89,43 @@ function useEditableDatagrid() {
     handleRowModesModelChange,
     handleRowEditStop,
     handleCancelClick,
-    handleDeleteClick,
-    processRowUpdate,
   };
+}
+
+interface Form {
+  email: string;
+}
+
+function EmailField({ control }: { control: Control<Form> }) {
+  const { inputHandleAutofillProps, inputLabelProps } = useHandleAutoFill();
+  return (
+    <Controller
+      name={"email"}
+      control={control}
+      render={({ field: { ref, ...props }, fieldState: { error } }) => (
+        <TextField
+          margin="normal"
+          label="Email"
+          inputRef={ref}
+          error={Boolean(error)}
+          autoComplete="email"
+          fullWidth
+          size={"small"}
+          sx={{ m: 0 }}
+          helperText={error?.message}
+          InputLabelProps={inputLabelProps}
+          InputProps={inputHandleAutofillProps}
+          {...props}
+        />
+      )}
+    />
+  );
 }
 
 export default function ManageOrganisationPage() {
   const { organisation } = useOrganisation();
-  const [rows, setRows] = React.useState([]);
+  const { user } = useUser();
+  const [rows, setRows] = React.useState<User[]>([]);
   const apiRef = useGridApiRef();
   const {
     rowModesModel,
@@ -138,9 +135,33 @@ export default function ManageOrganisationPage() {
     handleSaveClick,
     handleRowEditStop,
     handleCancelClick,
-    handleDeleteClick,
-    processRowUpdate,
+    // handleDeleteClick,
+    // processRowUpdate,
   } = useEditableDatagrid();
+  const { mutate } = useSWRConfig();
+
+  const validationSchema = Yup.object().shape({
+    email: Yup.string()
+      .required("Поле email обязательно")
+      .test("email", "Некорркетный email", validateEmail),
+  });
+
+  const { control, handleSubmit, watch, trigger, reset, formState } =
+    useForm<Form>({
+      mode: "onChange",
+      resolver: yupResolver(validationSchema),
+      shouldFocusError: false,
+      shouldUseNativeValidation: false,
+      defaultValues: {
+        email: "",
+      },
+    });
+
+  useEffect(() => {
+    if (organisation?.users) {
+      setRows(organisation.users.map((u) => ({ ...u, role: u.role.name })));
+    }
+  }, [organisation]);
 
   useEffect(() => {
     apiRef.current.autosizeColumns({
@@ -149,36 +170,44 @@ export default function ManageOrganisationPage() {
     });
   }, [rows]);
 
-  const columns: GridColDef[] = [
+  const columns: GridColDef<User>[] = [
     {
       field: "name",
       headerName: "ФИО",
-      editable: true,
+      editable: false,
       filterable: false,
       flex: 1,
     },
     {
       field: "email",
       headerName: "Email",
-      editable: true,
+      editable: false,
       filterable: false,
       flex: 1,
     },
     {
       field: "role",
       headerName: "Роль",
-      editable: true,
+      type: "singleSelect",
+      valueOptions: [
+        { value: Role.ADMIN, label: getUserRoleName(Role.ADMIN) },
+        { value: Role.USER, label: getUserRoleName(Role.USER) },
+        { value: Role.MANAGER, label: getUserRoleName(Role.MANAGER) },
+      ],
+      editable: Boolean(user?.isAdmin),
       filterable: false,
       flex: 1,
     },
-    {
+  ];
+
+  if (user?.isAdmin) {
+    columns.push({
       field: "actions",
       type: "actions",
       flex: 0.5,
       headerName: "",
-      getActions: ({ id }) => {
+      getActions: ({ id, row }: { id: GridRowId; row: GridRowModel<User> }) => {
         const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
-
         if (isInEditMode) {
           return [
             <GridActionsCellItem
@@ -194,7 +223,7 @@ export default function ManageOrganisationPage() {
               key={"cancel"}
               icon={<CancelIcon />}
               label="Cancel"
-              onClick={() => handleCancelClick(id, setRows, rows)}
+              onClick={() => handleCancelClick(id)}
               color="inherit"
             />,
           ];
@@ -212,24 +241,97 @@ export default function ManageOrganisationPage() {
             key={"delete"}
             icon={<DeleteIcon />}
             label="Delete"
-            onClick={() => handleDeleteClick(id, setRows, rows)}
+            onClick={() => fireUser(row.email)}
             color="inherit"
           />,
         ];
       },
-    },
-  ];
+    });
+  }
+
+  function fireUser(email: any) {
+    const requestOptions = {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+      }),
+    };
+    fetch("/api/organisation/fire", requestOptions)
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        mutate("/api/organisation");
+      })
+      .catch((error) => console.error(error));
+  }
+
+  function inviteUser(data: Form) {
+    const requestOptions = {
+      method: "POST",
+      body: JSON.stringify({
+        email: data.email,
+      }),
+    };
+    fetch("/api/organisation/invite", requestOptions)
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        mutate("/api/organisation");
+      })
+      .catch((error) => console.error(error));
+  }
+
+  function rowUpdate(newRow) {
+    const requestOptions = {
+      method: "POST",
+      body: JSON.stringify({
+        email: newRow.email,
+        role: newRow.role,
+      }),
+    };
+    fetch("/api/organisation/change_user_role", requestOptions)
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        mutate("/api/organisation");
+        mutate("/api/user");
+      })
+      .catch((error) => console.error(error));
+    return newRow;
+  }
 
   return (
     <>
       <Typography mb={7} mt={5} variant={"h3"} color={"secondary.light"}>
         Организация
       </Typography>
-      <Box
-        sx={{
-          height: 500,
-        }}
-      >
+      <Box>
+        <Typography mb={2} variant={"subtitle1"} alignContent={"center"}>
+          Пользователи
+        </Typography>
+        {user?.isAdmin ? (
+          <Grid
+            container
+            spacing={2}
+            mb={2}
+            alignItems={"stretch"}
+            justifyContent={"end"}
+          >
+            <Grid item xs={12} lg={4} xl={3}>
+              <EmailField control={control} />
+            </Grid>
+            <Grid item xs={12} lg={4} xl={3}>
+              <Button
+                variant={"contained"}
+                color={"primary"}
+                fullWidth
+                onClick={handleSubmit(inviteUser)}
+              >
+                Пригласить пользователя
+              </Button>
+            </Grid>
+          </Grid>
+        ) : null}
         <DataGrid
           rows={rows}
           apiRef={apiRef}
@@ -244,10 +346,7 @@ export default function ManageOrganisationPage() {
           rowModesModel={rowModesModel}
           onRowModesModelChange={handleRowModesModelChange}
           onRowEditStop={handleRowEditStop}
-          processRowUpdate={(newRow) => processRowUpdate(newRow, setRows, rows)}
-          slots={{
-            toolbar: EditToolbar as GridSlots["toolbar"],
-          }}
+          processRowUpdate={rowUpdate}
           slotProps={{
             toolbar: { setRows, setRowModesModel },
           }}
