@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import { useState } from "react";
 
 export default function TestsPage() {
-  const [selectedTab, setSelectedTab] = useState("0");
+  const [selectedTab, setSelectedTab] = useState("1");
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setSelectedTab(newValue);
   };
@@ -16,15 +16,33 @@ export default function TestsPage() {
         Тесты
       </Typography>
       <TabContext value={selectedTab}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Box>
           <TabList
             onChange={handleChange}
             variant={"fullWidth"}
             aria-label="lab API tabs example"
           >
-            <Tab label="Пройденные" value="1" />
-            <Tab label="К прохождению" value="2" />
-            <Tab label="Созданные" value="3" />
+            <Tab
+              sx={{
+                fontWeight: 600,
+              }}
+              label="Пройденные"
+              value="1"
+            />
+            <Tab
+              sx={{
+                fontWeight: 600,
+              }}
+              label="К прохождению"
+              value="2"
+            />
+            <Tab
+              sx={{
+                fontWeight: 600,
+              }}
+              label="Созданные"
+              value="3"
+            />
           </TabList>
         </Box>
         <TabPanel value="1">Пройденные</TabPanel>

@@ -19,7 +19,7 @@ export default function Home() {
       </Typography>
       <Grid container spacing={2}>
         {!user.organisationId ? (
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6} md={8}>
             <Card sx={{ p: 2 }}>
               <CardContent>
                 <Typography mb={3} variant={"h5"}>
@@ -44,7 +44,7 @@ export default function Home() {
           </Grid>
         ) : null}
         {user.isAdmin ? (
-          <Grid item xs={3}>
+          <Grid item xs={12} lg={6} md={8}>
             <Card sx={{ p: 2 }}>
               <CardContent>
                 <Typography mb={3} variant={"h5"}>
@@ -68,7 +68,7 @@ export default function Home() {
           </Grid>
         ) : null}
         {user?.role?.name === Role.MANAGER ? (
-          <Grid item xs={4}>
+          <Grid item xs={12} lg={6} md={8}>
             <Card sx={{ p: 2 }}>
               <CardContent>
                 <Typography mb={3} variant={"h5"}>
