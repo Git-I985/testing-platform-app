@@ -1,19 +1,23 @@
-import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { getSessionUser } from "@/app/api/user/getSessionUser";
+import { getSessionUserData } from "@/app/api/getSessionUserData";
+import {
+  BadRequest,
+  ServerError,
+  Success,
+  Unauthorized,
+} from "@/app/api/responses";
 import prisma from "@/app/prisma/client";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
+  const { user } = await getSessionUserData();
 
-  if (!session) {
-    return NextResponse.json({ error: "Сессия не найдена" }, { status: 404 });
+  if (!user) {
+    return Unauthorized();
   }
 
   const queryResult = await prisma.user.findUnique({
     where: {
-      id: parseInt(session.user.id),
+      id: Number(user.id),
     },
     select: {
       organisation: {
@@ -36,31 +40,22 @@ export async function GET(request: Request) {
   });
 
   if (!queryResult || !queryResult.organisation) {
-    return NextResponse.json(
-      { error: "Пользователь не состоит в организации" },
-      { status: 404 },
-    );
+    return BadRequest({ error: "Пользователь не состоит в организации" });
   }
 
-  return NextResponse.json(queryResult.organisation);
+  return Success(queryResult.organisation);
 }
 
 export async function POST(request: Request) {
   const requestBody = await request.json();
-  const user = await getSessionUser();
+  const { user } = await getSessionUserData();
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Пользователя не существует" },
-      { status: 404 },
-    );
+    return Unauthorized();
   }
 
   if (user.organisationId) {
-    return NextResponse.json(
-      { error: "Пользователь уже состоит в организации" },
-      { status: 403 },
-    );
+    return BadRequest({ error: "Пользователь уже состоит в организации" });
   }
 
   const organisation = await prisma.organisation.create({
@@ -76,15 +71,14 @@ export async function POST(request: Request) {
   });
 
   if (!adminRole) {
-    return NextResponse.json(
-      { error: "Неудается назначить роль администратора пользователю" },
-      { status: 404 },
-    );
+    return ServerError({
+      error: "Неудается назначить роль администратора пользователю",
+    });
   }
 
   await prisma.user.update({
     where: {
-      id: user.id,
+      id: Number(user.id),
     },
     data: {
       organisationId: organisation.id,
@@ -92,5 +86,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({});
+  return Success();
 }

@@ -1,16 +1,16 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
+import { NotFound, Success, Unauthorized } from "@/app/api/responses";
 import { getSessionUser } from "@/app/api/user/getSessionUser";
 import prisma from "@/app/prisma/client";
 import bcrypt from "bcrypt";
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const requestBody = await request.json();
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return NextResponse.json({}, { status: 403 });
+    return Unauthorized();
   }
 
   const user = await prisma.user.findUnique({
@@ -20,10 +20,7 @@ export async function POST(request: Request) {
   });
 
   if (!user) {
-    return NextResponse.json(
-      { error: "Пользователя не существует" },
-      { status: 404 },
-    );
+    return NotFound({ error: "Пользователя не существует" });
   }
 
   if (requestBody.newPassword) {
@@ -47,12 +44,9 @@ export async function POST(request: Request) {
           password: newPasswordEncrypted,
         },
       });
-      NextResponse.json({});
+      return Success();
     } else {
-      return NextResponse.json(
-        { error: "Пароли не совпадают" },
-        { status: 400 },
-      );
+      return Unauthorized({ error: "Пароли не совпадают" });
     }
   } else {
     await prisma.user.update({
@@ -61,20 +55,18 @@ export async function POST(request: Request) {
       },
       data: requestBody,
     });
-    NextResponse.json({});
+    return Success();
   }
-
-  return NextResponse.json(requestBody, { status: 200 });
 }
 
 export async function GET(request: Request) {
   const user = await getSessionUser();
 
   if (!user) {
-    return NextResponse.json({}, { status: 404 });
+    return Unauthorized();
   }
 
   const { password, ...userDetails } = user;
 
-  return NextResponse.json(userDetails);
+  return Success(userDetails);
 }

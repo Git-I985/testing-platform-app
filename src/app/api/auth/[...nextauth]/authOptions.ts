@@ -12,13 +12,21 @@ export const authOptions: AuthOptions = {
     session: async ({ session, token }) => {
       if (session?.user) {
         // @ts-ignore
-        session.user.id = token.sub;
+        session.user.id = token.uid;
+        session.user.role = token.role;
+        session.user.isAdmin = token.isAdmin;
+        session.user.isManager = token.isManager;
+        session.user.organisationId = token.organisationId || null;
       }
       return session;
     },
     jwt: async ({ user, token }) => {
       if (user) {
         token.uid = user.id;
+        token.role = user?.role?.name || null;
+        token.isAdmin = user.role?.name === "ADMIN";
+        token.isManager = user.role?.name === "MANAGER";
+        token.organisationId = user?.organisationId || null;
       }
       return token;
     },
@@ -47,6 +55,9 @@ export const authOptions: AuthOptions = {
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email,
+            },
+            include: {
+              role: true,
             },
           });
           if (user) {

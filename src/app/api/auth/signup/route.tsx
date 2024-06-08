@@ -1,17 +1,14 @@
+import { BadRequest, ServerError, Success } from "@/app/api/responses";
 import prisma from "@/app/prisma/client";
 import bcrypt from "bcrypt";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const requestBody = await request.json();
 
   if (!requestBody.email || !requestBody.password) {
-    return NextResponse.json(
-      {
-        error: "Одно из обязательных полей не заполнено",
-      },
-      { status: 400 },
-    );
+    return BadRequest({
+      error: "Одно из обязательных полей не заполнено",
+    });
   }
 
   try {
@@ -21,21 +18,15 @@ export async function POST(request: Request) {
       },
     });
     if (user) {
-      return NextResponse.json(
-        {
-          error: "Пользователь с таким email уже существует",
-        },
-        { status: 400 },
-      );
+      return BadRequest({
+        error: "Пользователь с таким email уже существует",
+      });
     }
   } catch (e) {
     console.log(`Check user exist error`, e);
-    return NextResponse.json(
-      {
-        error: "Check user exist error",
-      },
-      { status: 500 },
-    );
+    return ServerError({
+      error: "Check user exist error",
+    });
   }
 
   try {
@@ -45,13 +36,10 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     console.log(`User creation error`, e);
-    return NextResponse.json(
-      {
-        error: "User creation error",
-      },
-      { status: 500 },
-    );
+    return ServerError({
+      error: "User creation error",
+    });
   }
 
-  return NextResponse.json({}, { status: 200 });
+  return Success();
 }

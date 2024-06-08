@@ -1,18 +1,29 @@
-import { getSessionUser } from "@/app/api/user/getSessionUser";
+import { getSessionUserData } from "@/app/api/getSessionUserData";
+import {
+  BadRequest,
+  NotFound,
+  ServerError,
+  Success,
+  Unauthorized,
+} from "@/app/api/responses";
 import prisma from "@/app/prisma/client";
 import { NextResponse } from "next/server";
 
 export const POST = async (request: Request) => {
-  const { email } = await request.json();
-  const currentUser = await getSessionUser();
-  if (!email) {
-    return NextResponse.json(
-      {
-        error: "No email provided",
-      },
-      { status: 400 },
-    );
+  const { user: currentUser } = await getSessionUserData();
+
+  if (!currentUser) {
+    return Unauthorized();
   }
+
+  const { email } = await request.json();
+
+  if (!email) {
+    return BadRequest({
+      error: "No email provided",
+    });
+  }
+
   const user = await prisma.user.findUnique({
     where: {
       email: email,
@@ -20,21 +31,15 @@ export const POST = async (request: Request) => {
   });
 
   if (!user) {
-    return NextResponse.json(
-      {
-        error: "No user found",
-      },
-      { status: 404 },
-    );
+    return NotFound({
+      error: "No user found",
+    });
   }
 
   if (user.organisationId) {
-    return NextResponse.json(
-      {
-        error: "User already in organisation",
-      },
-      { status: 400 },
-    );
+    return BadRequest({
+      error: "User already in organisation",
+    });
   }
 
   const role = await prisma.role.findUnique({
@@ -44,12 +49,9 @@ export const POST = async (request: Request) => {
   });
 
   if (!role) {
-    return NextResponse.json(
-      {
-        error: "Cannot assign role to user",
-      },
-      { status: 500 },
-    );
+    return ServerError({
+      error: "Cannot find role USER to assign",
+    });
   }
 
   await prisma.user.update({
@@ -62,5 +64,5 @@ export const POST = async (request: Request) => {
     },
   });
 
-  return NextResponse.json({});
+  return Success();
 };

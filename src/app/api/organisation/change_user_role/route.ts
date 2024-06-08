@@ -1,58 +1,35 @@
-import { getSessionUser } from "@/app/api/user/getSessionUser";
+import { getSessionUserData } from "@/app/api/getSessionUserData";
+import {
+  Forbidden,
+  NotFound,
+  Success,
+  Unauthorized,
+} from "@/app/api/responses";
 import prisma from "@/app/prisma/client";
-import { NextResponse } from "next/server";
 
 export const POST = async (request: Request) => {
-  const { email, role } = await request.json();
+  const { email, role: newRoleName } = await request.json();
 
-  if (!email) {
-    return NextResponse.json(
-      {
-        error: "No email provided",
-      },
-      { status: 400 },
-    );
-  }
-
-  const currentUser = await getSessionUser();
-
-  if (currentUser?.role?.name !== "ADMIN") {
-    return NextResponse.json(
-      {
-        error: "Forbidden",
-      },
-      { status: 403 },
-    );
-  }
-
-  const user = await prisma.user.findUnique({
-    where: {
-      email: email,
-    },
-  });
+  const { user } = await getSessionUserData();
 
   if (!user) {
-    return NextResponse.json(
-      {
-        error: "No user found",
-      },
-      { status: 404 },
-    );
+    return Unauthorized();
+  }
+
+  if (!user.isAdmin) {
+    return Forbidden();
   }
 
   const newRole = await prisma.role.findUnique({
     where: {
-      name: role,
+      name: newRoleName,
     },
   });
 
   if (!newRole) {
-    return NextResponse.json(
-      {
-        error: "No role found",
-      },
-      { status: 404 },
-    );
+    return NotFound({
+      error: `No role found with such name ${newRoleName}`,
+    });
   }
 
   await prisma.user.update({
@@ -64,5 +41,5 @@ export const POST = async (request: Request) => {
     },
   });
 
-  return NextResponse.json({});
+  return Success();
 };

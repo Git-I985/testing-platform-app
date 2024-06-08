@@ -1,8 +1,10 @@
 "use client";
 import { TabContext, TabList, TabPanel } from "@mui/lab";
-import { Tab } from "@mui/material";
+import { Stack, Tab } from "@mui/material";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function TestsPage() {
@@ -12,9 +14,18 @@ export default function TestsPage() {
   };
   return (
     <>
-      <Typography mb={7} mt={5} variant={"h3"} color={"secondary.light"}>
-        Тесты
-      </Typography>
+      <Stack
+        direction={"row"}
+        justifyContent={"space-between"}
+        alignItems={"center"}
+      >
+        <Typography mb={7} mt={5} variant={"h3"} color={"secondary.light"}>
+          Тесты
+        </Typography>
+        <Button href={"/tests/create"} component={Link} variant={"contained"}>
+          Создать тест
+        </Button>
+      </Stack>
       <TabContext value={selectedTab}>
         <Box>
           <TabList
