@@ -1,12 +1,8 @@
 "use client";
 import { useHandleAutoFill } from "@/app/components/Forms/useHandleAutoFill";
 import { validateEmail } from "@/app/components/Forms/validateEmail";
-import {
-  getUserRoleName,
-  Role,
-  useOrganisation,
-  useUser,
-} from "@/app/WithUser";
+import { useOrganisation } from "@/app/WithOrganisation";
+import { getUserRoleName, Role, useUser } from "@/app/WithUser";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";

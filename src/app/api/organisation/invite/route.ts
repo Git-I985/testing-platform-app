@@ -7,7 +7,6 @@ import {
   Unauthorized,
 } from "@/app/api/responses";
 import prisma from "@/app/prisma/client";
-import { NextResponse } from "next/server";
 
 export const POST = async (request: Request) => {
   const { user: currentUser } = await getSessionUserData();

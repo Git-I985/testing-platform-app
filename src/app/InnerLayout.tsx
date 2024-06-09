@@ -1,7 +1,14 @@
 "use client";
 
-import { useUser } from "@/app/WithUser";
-import { Logout } from "@mui/icons-material";
+import { getUserRoleName, Role, useUser } from "@/app/WithUser";
+import {
+  Add,
+  Home,
+  Logout,
+  PeopleAlt,
+  Person,
+  Quiz,
+} from "@mui/icons-material";
 import { useMediaQuery } from "@mui/system";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
@@ -19,6 +26,7 @@ import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ListItem from "@mui/material/ListItem";
+import Chip from "@mui/material/Chip";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -105,13 +113,21 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
             <Typography variant="h6" noWrap fontWeight={600}>
               АСТ
             </Typography>
-            {user.organisation ? (
+            {user?.organisation ? (
               <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-                {user.organisation.name}
+                {user.organisation.name}{" "}
+                {user?.role ? (
+                  <Chip
+                    variant={"filled"}
+                    color={"info"}
+                    size={"small"}
+                    label={getUserRoleName(user?.role?.name as Role)}
+                  />
+                ) : null}
               </Typography>
             ) : null}
           </Box>
-          {user.name ? (
+          {user?.name ? (
             <Typography variant="body1" noWrap>
               {user.name}
             </Typography>
@@ -151,13 +167,14 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
         open={open}
       >
         <Toolbar />
-        {/*<DrawerHeader>*/}
-        {/*    /!*<Typography variant={'body1'}>Автоматизированная платформа тестирования</Typography>*!/*/}
-        {/*</DrawerHeader>*/}
         <Divider />
         <List sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
           <ListItem disablePadding>
             <ListItemButton component={Link} href={"/"}>
+              <ListItemIcon sx={{ color: "white" }}>
+                <Home />
+              </ListItemIcon>
+
               <ListItemText primary={"Главная"} />
             </ListItemButton>
           </ListItem>
@@ -165,11 +182,17 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
             <>
               <ListItem disablePadding>
                 <ListItemButton component={Link} href={"/tests"}>
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <Quiz />
+                  </ListItemIcon>
                   <ListItemText primary={"Тесты"} />
                 </ListItemButton>
               </ListItem>
               <ListItem disablePadding>
                 <ListItemButton component={Link} href={"/organisation"}>
+                  <ListItemIcon sx={{ color: "white" }}>
+                    <PeopleAlt />
+                  </ListItemIcon>
                   <ListItemText primary={"Организация"} />
                 </ListItemButton>
               </ListItem>
@@ -177,12 +200,18 @@ export default function PersistentDrawerLeft({ children }: PropsWithChildren) {
           ) : null}
           <ListItem disablePadding>
             <ListItemButton component={Link} href={"/profile"}>
+              <ListItemIcon sx={{ color: "white" }}>
+                <Person />
+              </ListItemIcon>
               <ListItemText primary={"Профиль"} />
             </ListItemButton>
           </ListItem>
           {!user?.organisationId ? (
             <ListItem disablePadding>
               <ListItemButton component={Link} href={"/organisation/create"}>
+                <ListItemIcon sx={{ color: "white" }}>
+                  <Add />
+                </ListItemIcon>
                 <ListItemText primary={"Создать организацию"} />
               </ListItemButton>
             </ListItem>

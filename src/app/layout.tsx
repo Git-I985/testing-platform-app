@@ -1,6 +1,8 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { getSessionUser } from "@/app/api/user/getSessionUser";
 import PersistentDrawerLeft from "@/app/InnerLayout";
+import prisma from "@/app/prisma/client";
+import { WithOrganisation } from "@/app/WithOrganisation";
 import { WithSession } from "@/app/WithSession";
 import { WithUser } from "@/app/WithUser";
 import theme from "@/theme";
@@ -23,6 +25,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: PropsWithChildren) {
   const session = await getServerSession(authOptions);
   const user = await getSessionUser();
+
   return (
     <html lang="ru">
       <body className={inter.className}>
@@ -31,9 +34,11 @@ export default async function RootLayout({ children }: PropsWithChildren) {
             <CssBaseline />
             <ThemeProvider theme={theme}>
               {session && user ? (
-                <WithUser initialData={user}>
-                  <PersistentDrawerLeft>{children}</PersistentDrawerLeft>
-                </WithUser>
+                <WithOrganisation>
+                  <WithUser initialData={user}>
+                    <PersistentDrawerLeft>{children}</PersistentDrawerLeft>
+                  </WithUser>
+                </WithOrganisation>
               ) : (
                 children
               )}
